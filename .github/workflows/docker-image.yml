@@ -42,4 +42,4 @@ jobs:
           fi
     
           # Run new container
-          docker run -d -p 8000:8000 kishoredk/test:${{ env.IMAGE_TAG }}"
+          docker run -d -p 8000:8000 balasrinivascs/test:${{ env.IMAGE_TAG }}"
