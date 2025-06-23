@@ -12,16 +12,16 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Log in to Docker Hub
-      run: echo "${{secrets.DOCKER_PASSWORD}}" | docker login -u "kishoredk" --password-stdin
+      run: echo "${{secrets.DOCKER_PASSWORD}}" | docker login -u "balasrinivascs" --password-stdin
 
     - name: Set Docker image tag (using Git commit SHA)
       run: echo "IMAGE_TAG=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
 
     - name: Build and tag Docker image
-      run: docker build . --file Dockerfile --tag kishoredk/test:${{ env.IMAGE_TAG }}
+      run: docker build . --file Dockerfile --tag balasrinivascs/test:${{ env.IMAGE_TAG }}
 
     - name: Push Docker image
-      run: docker push kishoredk/test:${{ env.IMAGE_TAG }}
+      run: docker push balasrinivascs/test:${{ env.IMAGE_TAG }}
 
     - name: SSH and Deploy to EC2
       env:
