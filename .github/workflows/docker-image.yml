@@ -1,0 +1,45 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Log in to Docker Hub
+      run: echo "${{secrets.DOCKER_PASSWORD}}" | docker login -u "kishoredk" --password-stdin
+
+    - name: Set Docker image tag (using Git commit SHA)
+      run: echo "IMAGE_TAG=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_ENV
+
+    - name: Build and tag Docker image
+      run: docker build . --file Dockerfile --tag kishoredk/test:${{ env.IMAGE_TAG }}
+
+    - name: Push Docker image
+      run: docker push kishoredk/test:${{ env.IMAGE_TAG }}
+
+    - name: SSH and Deploy to EC2
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
+        HOST: ${{ secrets.EC2_HOST }}
+        USER: ${{ secrets.EC2_USER }}
+      run: |
+        echo "$SSH_PRIVATE_KEY" > private_key.pem && chmod 600 private_key.pem
+        ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST "
+          # Pull the latest image
+          docker pull kishoredk/test:${{ env.IMAGE_TAG }}
+    
+          # Stop and remove container using port 8000
+          CONTAINER_ID=\$(docker ps --filter 'publish=8000' --format '{{.ID}}')
+          if [ ! -z \"\$CONTAINER_ID\" ]; then
+            echo 'Stopping container using port 8000...'
+            docker stop \$CONTAINER_ID && docker rm \$CONTAINER_ID
+          fi
+    
+          # Run new container
+          docker run -d -p 8000:8000 kishoredk/test:${{ env.IMAGE_TAG }}"
